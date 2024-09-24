@@ -2,6 +2,7 @@ name: pokeapi_wrapper
 description: Flutter PokeApi Wrapper for consuming https://pokeapi.co/api/v2 endpoints with auto caching data.
 version: 0.0.3
 homepage: https://github.com/cbalmeida/pokeapi_wrapper
+publish_to: none
 
 environment:
   sdk: '>=3.0.3 <4.0.0'
@@ -10,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  sid_base:
+    path: ../sid_base
 
   shared_preferences: ^2.2.1
   http: ^1.1.0

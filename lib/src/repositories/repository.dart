@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sid_base/sid_base.dart';
 
 import '../../pokeapi_wrapper.dart';
 import '../repositories.dart';
@@ -26,7 +27,12 @@ class Repository implements IRepository {
   }
 
   Future<List<String>> get _cacheKeys async {
-    return (await _getSharedPreferences()).getKeys().where((element) => element.startsWith('http')).toList();
+    return [
+      for (final key in await _getPersistence.getKeys())
+        if (key case String keyString)
+          // if(keyString.startsWith("http")) // all keys belong to only this cache
+          keyString,
+    ];
   }
 
   @override
@@ -35,8 +41,8 @@ class Repository implements IRepository {
     List<String> keys = await _cacheKeys;
     for (int i = 0; i < keys.length; i++) {
       String key = keys.elementAt(i);
-      sizeTotal += (await _getSharedPreferences()).getString(key)?.length ?? 0;
-      await (await _getSharedPreferences()).remove(key);
+      sizeTotal += (await _getPersistence.readEncodedObject(key))?.length ?? 0;
+      await (await _getPersistence.remove(key));
       onProgress(key, (i + 1) * 100 ~/ keys.length);
     }
     return sizeTotal;
@@ -48,26 +54,26 @@ class Repository implements IRepository {
     List<String> keys = await _cacheKeys;
     for (int i = 0; i < keys.length; i++) {
       String key = keys.elementAt(i);
-      sizeTotal += (await _getSharedPreferences()).getString(key)?.length ?? 0;
+      sizeTotal += (await (_getPersistence).readEncodedObject(key))?.length ?? 0;
     }
     return sizeTotal;
   }
 
   /// local storage
 
-  SharedPreferences? _sharedPreferences;
-  Future<SharedPreferences> _getSharedPreferences() async {
-    _sharedPreferences ??= await SharedPreferences.getInstance();
-    return _sharedPreferences!;
+  HivePersistence? _hivePersistence;
+  PersistenceProvider get _getPersistence {
+    _hivePersistence ??= HivePersistence(boxName: "poke-api-wrapper-cache");
+    return _hivePersistence!;
   }
 
   Future<String?> _getFromLocalStorage(String url) async {
-    final String? value = (await _getSharedPreferences()).getString(url);
+    final String? value = (await _getPersistence.readEncodedObject(url));
     return value;
   }
 
   Future<bool> _putToLocalStorage(String url, String value) async {
-    await (await _getSharedPreferences()).setString(url, value);
+    await (await _getPersistence.write(url, value));
     return true;
   }
 
